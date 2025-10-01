@@ -4,6 +4,7 @@ import org.reactive.corporate.model.Task;
 import org.reactive.corporate.model.Worker;
 import org.reactive.corporate.model.dto.MetaInfo;
 import org.reactive.corporate.model.enums.Priority;
+import org.reactive.corporate.model.enums.Tag;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -16,10 +17,13 @@ public class DataGenerator {
             "Update client API", "Fix DB connection leak", "Implement feature X", "Refactor module Y",
             "Deploy to staging", "Write unit tests", "Investigate production error", "Prepare demo"
     };
-    private static final String[] SAMPLE_TAGS = {"backend", "frontend", "bug", "urgent", "deploy", "research"};
     private static final String[] DEPARTMENTS = {"Engineering", "QA", "DevOps", "Product"};
     private static final String[] NAMES = {"Ivan Petrov", "Olga Smirnova", "John Doe", "Jane Roe", "Max Mustermann"};
-
+    private static final Tag[] SAMPLE_TAGS = {
+            Tag.BUG, Tag.FEATURE, Tag.DOCUMENTATION, Tag.TESTING,
+            Tag.REFACTORING, Tag.OPTIMIZATION, Tag.SECURITY, Tag.PERFORMANCE,
+            Tag.MAINTENANCE, Tag.DEPLOYMENT, Tag.INTEGRATION, Tag.CONFIGURATION
+    };
 
     public List<Worker> generateWorkers(int count) {
         List<Worker> list = new ArrayList<>(count);
@@ -41,12 +45,12 @@ public class DataGenerator {
             LocalDateTime due = LocalDateTime.ofEpochSecond(rnd.nextLong(InstantBounds.pastEpoch(), InstantBounds.futureEpoch()), 0, ZoneOffset.UTC);
             Priority p = Priority.values()[rnd.nextInt(Priority.values().length)];
             MetaInfo meta = new MetaInfo("system", LocalDateTime.now().minusDays(rnd.nextInt(0, 30)));
-            List<String> tags = new ArrayList<>();
+            List<Tag> tags = new ArrayList<>();
             int tagsCount = rnd.nextInt(1, 4);
             for (int t = 0; t < tagsCount; t++) tags.add(SAMPLE_TAGS[rnd.nextInt(SAMPLE_TAGS.length)]);
             double est = Math.round((rnd.nextDouble(0.5, 40.0)) * 10.0) / 10.0; // hours
             boolean completed = rnd.nextBoolean();
-            int assignee = workers.get(rnd.nextInt(workersSize)).getId();
+            Worker assignee = workers.get(rnd.nextInt(workersSize));
             tasks.add(new Task(i, title, due, p, meta, tags, est, completed, assignee));
         }
         return tasks;

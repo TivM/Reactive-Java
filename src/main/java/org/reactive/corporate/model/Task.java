@@ -2,6 +2,7 @@ package org.reactive.corporate.model;
 
 import org.reactive.corporate.model.dto.MetaInfo;
 import org.reactive.corporate.model.enums.Priority;
+import org.reactive.corporate.model.enums.Tag;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,15 +14,14 @@ public class Task {
     private final LocalDateTime dueDate;
     private final Priority priority;
     private final MetaInfo meta;
-    private final List<String> tags;
-
+    private final List<Tag> tags;
     private final double estimatedHours;
     private final boolean completed;
-    private final int assigneeWorkerId;
+    private final Worker assigneeWorker;
 
 
-    public Task(int id, String title, LocalDateTime dueDate, Priority priority, MetaInfo meta, List<String> tags,
-                double estimatedHours, boolean completed, int assigneeWorkerId) {
+    public Task(int id, String title, LocalDateTime dueDate, Priority priority, MetaInfo meta, List<Tag> tags,
+                double estimatedHours, boolean completed, Worker assigneeWorker) {
         this.id = id;
         this.title = Objects.requireNonNull(title);
         this.dueDate = Objects.requireNonNull(dueDate);
@@ -30,7 +30,7 @@ public class Task {
         this.tags = List.copyOf(tags);
         this.estimatedHours = estimatedHours;
         this.completed = completed;
-        this.assigneeWorkerId = assigneeWorkerId;
+        this.assigneeWorker = assigneeWorker;
     }
 
     public int getId() { return id; }
@@ -38,8 +38,8 @@ public class Task {
     public LocalDateTime getDueDate() { return dueDate; }
     public Priority getPriority() { return priority; }
     public MetaInfo getMeta() { return meta; }
-    public List<String> getTags() { return tags; }
+    public List<Tag> getTags() { return tags; }
     public double getEstimatedHours() { return estimatedHours; }
     public boolean isCompleted() { return completed; }
-    public int getAssigneeWorkerId() { return assigneeWorkerId; }
+    public Worker getAssigneeWorker() { return assigneeWorker; }
 }
