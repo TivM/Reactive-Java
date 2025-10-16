@@ -1,8 +1,10 @@
 package org.reactive.corporate.service.collector;
 
 import org.reactive.corporate.model.Task;
+import org.reactive.corporate.model.enums.Tag;
 
-import java.util.DoubleSummaryStatistics;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -10,27 +12,40 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-public class EstimatedHoursCollector implements Collector<Task, DoubleSummaryStatistics, DoubleSummaryStatistics> {
+/**
+ * Кастомный коллектор для сбора статистики по тегам задач.
+ * Группирует задачи по тегам и суммирует оценочные часы для каждого тега.
+ */
+public class EstimatedHoursCollector implements Collector<Task, Map<Tag, Double>, Map<Tag, Double>> {
+    
     @Override
-    public Supplier<DoubleSummaryStatistics> supplier() {
-        return DoubleSummaryStatistics::new;
+    public Supplier<Map<Tag, Double>> supplier() {
+        return () -> new EnumMap<>(Tag.class);
     }
 
-
     @Override
-    public BiConsumer<DoubleSummaryStatistics, Task> accumulator() {
-        return (acc, task) -> acc.accept(task.getEstimatedHours());
+    public BiConsumer<Map<Tag, Double>, Task> accumulator() {
+        return (map, task) -> {
+            // Обрабатываем все теги задачи
+            for (Tag tag : task.getTags()) {
+                map.merge(tag, task.getEstimatedHours(), Double::sum);
+            }
+        };
     }
 
-
     @Override
-    public BinaryOperator<DoubleSummaryStatistics> combiner() {
-        return (a, b) -> { a.combine(b); return a; };
+    public BinaryOperator<Map<Tag, Double>> combiner() {
+        return (map1, map2) -> {
+            // Объединяем две карты, суммируя значения для одинаковых тегов
+            for (Map.Entry<Tag, Double> entry : map2.entrySet()) {
+                map1.merge(entry.getKey(), entry.getValue(), Double::sum);
+            }
+            return map1;
+        };
     }
 
-
     @Override
-    public Function<DoubleSummaryStatistics, DoubleSummaryStatistics> finisher() {
+    public Function<Map<Tag, Double>, Map<Tag, Double>> finisher() {
         return Function.identity();
     }
 
