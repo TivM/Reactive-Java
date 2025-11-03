@@ -3,26 +3,38 @@ package org.reactive.corporate.service;
 import org.reactive.corporate.model.Task;
 import org.reactive.corporate.model.enums.Tag;
 import org.reactive.corporate.service.collector.EstimatedHoursCollector;
+import org.reactive.corporate.service.spliterator.TaskTagSpliterator;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class AnalyticsService {
 
     public static Map<Tag, Double> aggregateEstimatedHoursWithCustomCollector(List<Task> tasks) {
-        return tasks.stream().collect(new EstimatedHoursCollector());
+        return aggregateEstimatedHoursWithCustomCollector(tasks, 0L);
+    }
+
+    public static Map<Tag, Double> aggregateEstimatedHoursWithCustomCollector(List<Task> tasks, long delayMillis) {
+        return tasks.stream().collect(new EstimatedHoursCollector(delayMillis));
     }
     
     //1 Итеративный подход для статистики по тегам
     public static Map<Tag, Double> aggregateByTagIterative(List<Task> tasks) {
+        return aggregateByTagIterative(tasks, 0L);
+    }
+
+    public static Map<Tag, Double> aggregateByTagIterative(List<Task> tasks, long delayMillis) {
         Map<Tag, Double> map = new EnumMap<>(Tag.class);
         for (Task task : tasks) {
+            double hours = task.getEstimatedHours(delayMillis);
             for (Tag tag : task.getTags()) {
-                map.merge(tag, task.getEstimatedHours(), Double::sum);
+                map.merge(tag, hours, Double::sum);
             }
         }
         return map;
@@ -30,9 +42,28 @@ public class AnalyticsService {
 
     //2 Stream + стандартные коллекторы для статистики по тегам
     public static Map<Tag, Double> aggregateByTagStream(List<Task> tasks) {
+        return aggregateByTagStreamParallel(tasks, 0L);
+    }
+
+    public static Map<Tag, Double> aggregateByTagStreamParallel(List<Task> tasks, long delayMillis) {
+        return tasks.parallelStream()
+                .flatMap(task -> {
+                    double hours = task.getEstimatedHours(delayMillis);
+                    return task.getTags().stream().map(tag -> Map.entry(tag, hours));
+                })
+                .collect(Collectors.groupingByConcurrent(
+                        Map.Entry::getKey,
+                        ConcurrentHashMap::new,
+                        Collectors.summingDouble(Map.Entry::getValue)
+                ));
+    }
+
+    public static Map<Tag, Double> aggregateByTagStreamSequential(List<Task> tasks, long delayMillis) {
         return tasks.stream()
-                .flatMap(task -> task.getTags().stream()
-                        .map(tag -> Map.entry(tag, task.getEstimatedHours())))
+                .flatMap(task -> {
+                    double hours = task.getEstimatedHours(delayMillis);
+                    return task.getTags().stream().map(tag -> Map.entry(tag, hours));
+                })
                 .collect(Collectors.groupingBy(
                         Map.Entry::getKey,
                         () -> new EnumMap<>(Tag.class),
@@ -40,9 +71,31 @@ public class AnalyticsService {
                 ));
     }
 
+    public static Map<Tag, Double> aggregateByTagStreamSequential(List<Task> tasks) {
+        return aggregateByTagStreamSequential(tasks, 0L);
+    }
+
+    public static Map<Tag, Double> aggregateByTagStreamWithCustomSpliterator(List<Task> tasks, long delayMillis) {
+        TaskTagSpliterator spliterator = new TaskTagSpliterator(tasks, delayMillis);
+        return StreamSupport.stream(spliterator, true)
+                .collect(Collectors.groupingByConcurrent(
+                        Map.Entry::getKey,
+                        ConcurrentHashMap::new,
+                        Collectors.summingDouble(Map.Entry::getValue)
+                ));
+    }
+
+    public static Map<Tag, Double> aggregateByTagStreamWithCustomSpliterator(List<Task> tasks) {
+        return aggregateByTagStreamWithCustomSpliterator(tasks, 0L);
+    }
+
     //3 Кастомный коллектор для статистики по тегам
     public static Map<Tag, Double> aggregateByTagCustomCollector(List<Task> tasks) {
-        return tasks.stream().collect(new EstimatedHoursCollector());
+        return aggregateByTagCustomCollector(tasks, 0L);
+    }
+
+    public static Map<Tag, Double> aggregateByTagCustomCollector(List<Task> tasks, long delayMillis) {
+        return tasks.stream().collect(new EstimatedHoursCollector(delayMillis));
     }
 
 

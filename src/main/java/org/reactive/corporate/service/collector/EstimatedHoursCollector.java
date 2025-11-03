@@ -17,6 +17,16 @@ import java.util.stream.Collector;
  * Группирует задачи по тегам и суммирует оценочные часы для каждого тега.
  */
 public class EstimatedHoursCollector implements Collector<Task, Map<Tag, Double>, Map<Tag, Double>> {
+
+    private final long delayMillis;
+
+    public EstimatedHoursCollector() {
+        this(0L);
+    }
+
+    public EstimatedHoursCollector(long delayMillis) {
+        this.delayMillis = Math.max(0, delayMillis);
+    }
     
     @Override
     public Supplier<Map<Tag, Double>> supplier() {
@@ -28,7 +38,7 @@ public class EstimatedHoursCollector implements Collector<Task, Map<Tag, Double>
         return (map, task) -> {
             // Обрабатываем все теги задачи
             for (Tag tag : task.getTags()) {
-                map.merge(tag, task.getEstimatedHours(), Double::sum);
+                map.merge(tag, task.getEstimatedHours(delayMillis), Double::sum);
             }
         };
     }

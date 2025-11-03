@@ -40,6 +40,17 @@ public class Task {
     public MetaInfo getMeta() { return meta; }
     public List<Tag> getTags() { return tags; }
     public double getEstimatedHours() { return estimatedHours; }
+
+    public double getEstimatedHours(long delayMillis) {
+        if (delayMillis > 0) {
+            try {
+                Thread.sleep(delayMillis);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return estimatedHours;
+    }
     public boolean isCompleted() { return completed; }
     public Worker getAssigneeWorker() { return assigneeWorker; }
 }
